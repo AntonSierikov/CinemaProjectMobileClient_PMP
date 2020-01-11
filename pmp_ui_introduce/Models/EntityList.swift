@@ -9,7 +9,8 @@
 import Foundation
 
 
-class EntityList<T: Decodable> : NSObject, Decodable {
+class EntityList<T: Decodable> : NSObject, NSCoding, EntityBase, Decodable {
+ 
     public var page: Int;
     public var results: [T];
     public var totalResults: Int;
@@ -23,10 +24,37 @@ class EntityList<T: Decodable> : NSObject, Decodable {
         results = try values.decode([T].self, forKey: .results)
     }
     
+    required init?(coder: NSCoder) {
+        self.page = coder.decodeInteger(forKey: Keys.page.rawValue);
+        self.results = coder.decodeObject(forKey: Keys.results.rawValue) as! [T];
+        self.totalResults = coder.decodeInteger(forKey: Keys.total_results.rawValue);
+        self.totalPages = coder.decodeInteger(forKey: Keys.total_pages.rawValue);
+    }
+    
+    func encode(with coder: NSCoder) {
+        coder.encode(self.page, forKey: Keys.page.rawValue);
+        coder.encode(self.results, forKey: Keys.results.rawValue);
+        coder.encode(self.totalResults, forKey: Keys.total_results.rawValue);
+        coder.encode(self.totalPages, forKey: Keys.total_pages.rawValue);
+    }
+    
     private enum CodingKeys: String, CodingKey {
         case page;
         case total_results;
         case total_pages;
         case results;
+    }
+    
+    private enum Keys: String {
+        case page;
+        case total_results;
+        case total_pages;
+        case results;
+    }
+    
+    var entityId: Int {
+        get {
+            return self.page;
+        }
     }
 }

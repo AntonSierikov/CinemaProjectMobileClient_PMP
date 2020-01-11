@@ -20,6 +20,7 @@ class DetailViewController: ViewBaseController {
     private var movieId: Int = 0;
     
     let movieApiService = MovieApiService();
+    let objectFileManager = ObjectFileManager();
         
     override func viewDidLoad() {
         super.viewDidLoad();
@@ -32,12 +33,22 @@ class DetailViewController: ViewBaseController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated);
-        movieApiService.loadMovie(movieId: self.movieId,
-            with: { response in self.initViewControls(withMovie: response) },
-            errorBlock: super.showError);
+        let movie: Movie? = self.objectFileManager.load(type: String(describing: type(of: Movie.self)), id: self.movieId);
+        if (movie !== nil) {
+            self.afterMovieLoaded(withMovie: movie!);
+        } else {
+            movieApiService.loadMovie(movieId: self.movieId,
+                with: { response in self.afterMovieLoaded(withMovie: response) },
+                errorBlock: super.showError);
+        }
+    }
+    
+    private func afterMovieLoaded(withMovie: Movie) -> Void {
+        self.objectFileManager.saveData(object: withMovie, type: String(describing: type(of: Movie.self)), id: self.movieId);
+        self.initViewControls(withMovie: withMovie);
     }
 
-    func initViewControls(withMovie: Movie) -> Void {
+    private func initViewControls(withMovie: Movie) -> Void {
         DispatchQueue.main.async {
             self.textView.text = withMovie.movieDescription;
             self.labelView.text = withMovie.title;
@@ -47,7 +58,7 @@ class DetailViewController: ViewBaseController {
         }
     }
     
-    func removeDefaultControlValues() -> Void {
+    private func removeDefaultControlValues() -> Void {
         self.textView.text = "";
         self.labelView.text = "";
         self.imageView.image = nil;

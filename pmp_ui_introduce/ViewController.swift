@@ -15,8 +15,9 @@ class ViewController: ViewBaseController, UITableViewDataSource, UITableViewDele
     private var cellTypeIdentifier: String = "cellTypeIndentifier";
     
     private var detailViewControllerName: String = "DetailViewController";
-    //private var movieDataSource: MovieDataSource = MovieDataSource.init();
     private var movieApiService = MovieApiService();
+    private var fileManager = ObjectFileManager();
+    private var page = 1;
     
     public var popularMovies: EntityList<MovieListItem>? {
         didSet {
@@ -28,8 +29,12 @@ class ViewController: ViewBaseController, UITableViewDataSource, UITableViewDele
     
     override func viewDidLoad() {
         super.viewDidLoad();
-        let page = 1;
-        movieApiService.loadPopularMovies(page: page, with: { response in self.afterLoadPopuplarMovies(entities: response) }, errorBlock:  super.showError);
+        let popularMovies: EntityList<MovieListItem>? = self.fileManager.load(type: String(describing: type(of: EntityList<MovieListItem>.self)), id: self.page);
+        if (popularMovies == nil) {
+            movieApiService.loadPopularMovies(page: self.page, with: { response in self.afterLoadPopuplarMovies(entities: response) }, errorBlock:  super.showError);
+        } else {
+            self.popularMovies = popularMovies;
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -48,14 +53,17 @@ class ViewController: ViewBaseController, UITableViewDataSource, UITableViewDele
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let detailVc: DetailViewController = DetailViewController(nibName: detailViewControllerName, bundle: nil);
-        
+        let detailVc: DetailViewController = DetailViewController(nibName: self.detailViewControllerName, bundle: nil);
+            
         self.present(detailVc, animated: true, completion: nil);
         let movieId = self.popularMovies!.results[indexPath.item].movieId;
         detailVc.configure(movieId: movieId);
     }
+    
+    
 
     private func afterLoadPopuplarMovies(entities: EntityList<MovieListItem>) -> Void {
         self.popularMovies = entities;
+        self.fileManager.saveData(object: entities, type: String(describing: type(of: EntityList<MovieListItem>.self)), id: self.page);
     }
 }
